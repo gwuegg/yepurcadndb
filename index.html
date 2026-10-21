@@ -5,9 +5,9 @@
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fff;--fg:#1c1c1e;--mut:#8a8f98;--card:#f2f3f5;--c1:#d9480f;--c2:#0b7285;--c3:#5f3dc4;--c4:#2b8a3e;--c5:#e03131}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#15171a;--fg:#e8eaed;--mut:#9aa0a6;--card:#202327;--c1:#ff8a5c;--c2:#3bc9db;--c3:#b197fc;--c4:#69db7c;--c5:#ff6b6b}}
 :root[data-theme=dark]{--bg:#15171a;--fg:#e8eaed;--mut:#9aa0a6;--card:#202327;--c1:#ff8a5c;--c2:#3bc9db;--c3:#b197fc;--c4:#69db7c;--c5:#ff6b6b}
-:root{--h:#ff6600;--f:#0066ff;--p:#e600b8;--m:#00a86b;--n:#8a2be2;--s:#e60000}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--h:#ff9d4d;--f:#5aa2ff;--p:#ff6fd8;--m:#2ee59d;--n:#c58bff;--s:#ff5c5c}}
-:root[data-theme=dark]{--h:#ff9d4d;--f:#5aa2ff;--p:#ff6fd8;--m:#2ee59d;--n:#c58bff;--s:#ff5c5c}
+:root{--h:#ff6600;--f:#0066ff;--p:#e600b8;--m:#00a86b;--n:#8a2be2;--s:#e60000;--l:#d49a00}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--h:#ff9d4d;--f:#5aa2ff;--p:#ff6fd8;--m:#2ee59d;--n:#c58bff;--s:#ff5c5c;--l:#ffd43b}}
+:root[data-theme=dark]{--h:#ff9d4d;--f:#5aa2ff;--p:#ff6fd8;--m:#2ee59d;--n:#c58bff;--s:#ff5c5c;--l:#ffd43b}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 .wrap{display:grid;grid-template-columns:300px 1fr;gap:12px;padding:12px;max-width:2000px;margin:auto}
@@ -35,8 +35,11 @@ svg{touch-action:none;cursor:grab;display:block;width:100%;height:calc(100vh - 6
 <label>h из<select id="sh"><option value="0">A</option><option value="1">B</option><option value="2">C</option></select></label>
 <label>f из<select id="sf"><option value="0">A</option><option value="1" selected>B</option><option value="2">C</option></select></label>
 <label>p из<select id="sp"><option value="0">A</option><option value="1">B</option><option value="2" selected>C</option></select></label></div>
-<label class="c"><input type="checkbox" id="t3" checked> 3. Следы AB и BC, расстояние между ними</label>
+<label class="c"><input type="checkbox" id="t3" checked> 3. Следы прямых, расстояние между ними</label>
+<div id="trs" style="margin-left:22px"></div>
 <label class="c"><input type="checkbox" id="t4" checked> 4. Плоскость через AC и углы наклона</label>
+<div class="r" style="margin-left:22px;color:var(--mut)"><label>K: удлин. AC, %<input type="number" id="kl" value="30"></label><label>K: y (⟂П₂) / z (⟂П₁)<input type="number" id="kv" value="20"></label></div>
+<label class="c" style="margin-left:22px;color:var(--mut)"><input type="checkbox" id="t4s"> показывать следы Σ₁, Σ₂</label>
 <label class="c" style="margin-top:10px"><input type="checkbox" id="pr"> Показать профильную проекцию П₃</label></div>
 <div class="card"><h2>Результаты</h2><div id="res"></div></div>
 </div>
@@ -44,6 +47,8 @@ svg{touch-action:none;cursor:grab;display:block;width:100%;height:calc(100vh - 6
 <script>
 const S=4,eps=1e-9,$=id=>document.getElementById(id),nm=['A','B','C'],def=[[70,15,40],[35,45,10],[10,10,60]];
 $('pts').innerHTML=nm.map((n,i)=>`<div class="r"><b>${n}</b>`+['x','y','z'].map((k,j)=>`<label>${k}<input type="number" id="${n}${k}" value="${def[i][j]}"></label>`).join('')+'</div>').join('');
+const op=d=>[['v','по варианту'],['h','горизонтальный'],['f','фронтальный'],['b','оба'],['n','нет']].map(([v,t])=>`<option value="${v}"${v==d?' selected':''}>${t}</option>`).join('');
+$('trs').innerHTML=[['a','AB','v'],['b','BC','v'],['c','AC','n']].map(([i,n,d])=>`<div class="r"><b style="width:30px">${n}</b><select id="s3${i}">${op(d)}</select></div>`).join('');
 $('ctl').addEventListener('input',draw);
 const P=id=>['x','y','z'].map(k=>+$(id+k).value);
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
@@ -70,28 +75,37 @@ const D=Math.abs(d)<eps?add(V[v],sub(q,p)):lerp(p,q,(V[v][k]-p[k])/d);
 const c='var(--'+id+')';ln(V[v],D,c,3);dot(q1(D),id+'₁',c);dot(q2(D),id+'₂',c);if(prof)dot(q3(D),id+'₃',c);
 R(c,`${t}: проведена из ${nm[v]} до пересечения со стороной ${nm[pi]}${nm[qi]} (проекции ${id}₁, ${id}₂)`)})}
 if(on(3)){
-const k=odd?2:1,tr=[];
-[[A,B,'AB','m'],[B,C,'BC','n']].forEach(([p,q,n,tn])=>{const tc='var(--'+tn+')';
-const d=p[k]-q[k];
-if(Math.abs(d)<eps){R(tc,`Прямая ${n} параллельна ${odd?'П₁':'П₂'} — следа нет`);return}
+const tv=odd?'h':'f',tr={h:[],f:[]};
+[[A,B,'AB','m','a'],[B,C,'BC','n','b'],[A,C,'AC','l','c']].forEach(([p,q,n,tn,i])=>{
+let v=$('s3'+i).value;if(v=='v')v=tv;
+const tc='var(--'+tn+')';
+(v=='b'?['h','f']:v=='n'?[]:[v]).forEach(kd=>{
+const k=kd=='h'?2:1,d=p[k]-q[k],tm=tn+(v=='b'&&kd=='f'?'′':'');
+if(Math.abs(d)<eps){R(tc,`Прямая ${n} параллельна ${kd=='h'?'П₁':'П₂'} — ${kd=='h'?'горизонтального':'фронтального'} следа нет`);return}
 const t=p[k]/d,T=lerp(p,q,t);T[k]=0;const ts=[0,1,t];
-ln(lerp(p,q,Math.min(...ts)),lerp(p,q,Math.max(...ts)),tc,2);
-L(q1(T),q2(T),tc,1);dot(q1(T),tn+'₁',tc);dot(q2(T),tn+'₂',tc);if(prof)dot(q3(T),tn+'₃',tc);R(tc,`След <b>${tn}</b> прямой ${n} (${odd?'горизонтальный':'фронтальный'}): ${tn}₁, ${tn}₂`);tr.push(T)});
-if(tr.length==2){const[a,b]=tr,dd=odd?Math.hypot(a[0]-b[0],a[1]-b[1]):Math.hypot(a[0]-b[0],a[2]-b[2]),f=odd?q1:q2;
-L(f(a),f(b),'var(--fg)',3.5);
-R('var(--fg)',`Расстояние между ${odd?'горизонтальными':'фронтальными'} следами AB и BC: <b>${dd.toFixed(2)}</b>`)}}
+ln(lerp(p,q,Math.min(...ts)),lerp(p,q,Math.max(...ts)),tc,3);
+L(q1(T),q2(T),tc,1);dot(q1(T),tm+'₁',tc);dot(q2(T),tm+'₂',tc);if(prof)dot(q3(T),tm+'₃',tc);
+R(tc,`След <b>${tm}</b> прямой ${n} (${kd=='h'?'горизонтальный':'фронтальный'}): ${tm}₁, ${tm}₂`);tr[kd].push([T,tm])})});
+['h','f'].forEach(kd=>{const a=tr[kd],f=kd=='h'?q1:q2;
+for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const[X,x]=a[i],[Y,y]=a[j],dd=kd=='h'?Math.hypot(X[0]-Y[0],X[1]-Y[1]):Math.hypot(X[0]-Y[0],X[2]-Y[2]);
+L(f(X),f(Y),'var(--fg)',3.5);R('var(--fg)',`Расстояние между ${kd=='h'?'горизонтальными':'фронтальными'} следами ${x} и ${y}: <b>${dd.toFixed(2)}</b>`)}})}
 if(on(4)){
-const k=odd?2:1,dx=C[0]-A[0],dk=C[k]-A[k],f=odd?q2:q1,col='var(--s)';
+const k=odd?2:1,dx=C[0]-A[0],dk=C[k]-A[k],f=odd?q2:q1,g=odd?q1:q2,col='var(--s)';
+const lam=(+$('kl').value||0)/100,K=lerp(A,C,-lam);K[odd?1:2]=+$('kv').value||0;
 const al=Math.atan2(Math.abs(dk),Math.abs(dx))*180/Math.PI;
-let ts=[-.3,1.3],X0=null;
-if(Math.abs(dk)>eps){const t=A[k]/(A[k]-C[k]);ts=[0,1,t];X0=lerp(A,C,t)[0]}
-L(f(lerp(A,C,Math.min(...ts))),f(lerp(A,C,Math.max(...ts))),col,3);
-if(X0!==null){const e=odd?(Math.max(A[1],C[1],10)+15)*S:-(Math.max(A[2],C[2],10)+15)*S;
+let X0=null,tt=null;
+if(Math.abs(dk)>eps){tt=A[k]/(A[k]-C[k]);X0=lerp(A,C,tt)[0]}
+const sh=$('t4s').checked,lo=Math.min(0,-lam),hi=sh?Math.max(1,tt!==null&&tt>1?tt:1):1;
+o+=`<polygon points="${[A,C,K].map(p=>g(p).join(',')).join(' ')}" fill="${col}" fill-opacity=".15" stroke="none"/>`;
+L(f(lerp(A,C,lo)),f(lerp(A,C,hi)),col,3);
+ln(A,K,col,3);ln(C,K,col,3);L(q1(K),q2(K),col,.8);
+dot(q1(K),'K₁',col);dot(q2(K),'K₂',col);if(prof)dot(q3(K),'K₃',col);
+if(sh&&X0!==null){const e=odd?(Math.max(A[1],C[1],K[1],10)+15)*S:-(Math.max(A[2],C[2],K[2],10)+15)*S;
 L([-X0*S,0],[-X0*S,e],col,3);
 dot([-X0*S,e],odd?'Σ₁':'Σ₂',col);
-dot(f(lerp(A,C,Math.max(...ts))),odd?'Σ₂':'Σ₁',col)}
+if(tt>=lo&&tt<=hi)dot(f(lerp(A,C,tt)),odd?'Σ₂':'Σ₁',col)}
 const a1=odd?al:90,a2=odd?90:al,a3=90-al;
-R(col,`Плоскость Σ через AC, ⟂ ${odd?'П₂':'П₁'} (следы Σ₁, Σ₂):<br>угол к П₁ = <b>${a1.toFixed(1)}°</b>, к П₂ = <b>${a2.toFixed(1)}°</b>, к П₃ = <b>${a3.toFixed(1)}°</b>`)}
+R(col,`Плоскость Σ = (A, C, K), ⟂ ${odd?'П₂':'П₁'}: ${odd?'K₂ лежит на A₂C₂, поэтому П₂-проекция плоскости — прямая':'K₁ лежит на A₁C₁, поэтому П₁-проекция плоскости — прямая'}${sh?'; следы Σ₁, Σ₂':''}.<br>Углы: к П₁ = <b>${a1.toFixed(1)}°</b>, к П₂ = <b>${a2.toFixed(1)}°</b>, к П₃ = <b>${a3.toFixed(1)}°</b>`)}
 const w=bb[2]-bb[0],h=bb[3]-bb[1],m=Math.max(w,h),pad=m*.08+12,fs=m/50;
 const lw='stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"';
 const ax=`<line x1="${bb[0]-12}" y1="0" x2="${bb[2]+12}" y2="0" ${lw}/><line x1="0" y1="${bb[1]-12}" x2="0" y2="${bb[3]+12}" ${lw}/><text x="${bb[0]-12}" y="0" dx="${-fs*1.2}" dy="${fs*.35}">x</text><text x="0" y="${bb[1]-12}" dx="5" dy="${fs}">z</text><text x="0" y="${bb[3]+12}" dx="5" dy="-4">y₁</text><text x="${bb[0]-12}" y="0" dx="${fs*.6}" dy="-5">П₂</text><text x="${bb[0]-12}" y="0" dx="${fs*.6}" dy="${fs*1.3}">П₁</text>`+(prof?`<text x="${bb[2]+12}" y="0" dx="3" dy="${fs*.35}">y₃</text><text x="${bb[2]+12}" y="${bb[1]-12}" dx="${-fs*2.5}" dy="${fs}">П₃</text>`:'');
